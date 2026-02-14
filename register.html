@@ -1,0 +1,497 @@
+{% extends "layout.html" %}
+{% block title %}Register - PregBot{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-7">
+        <div class="card shadow-lg">
+            <div class="card-header bg-success text-white text-center py-4">
+                <h3><i class="fas fa-user-plus"></i> Join PregBot Today</h3>
+                <p class="mb-0">Create your free account to access AI-powered pregnancy support</p>
+            </div>
+            <div class="card-body p-4 p-md-5">
+                <!-- Registration Form -->
+                <form method="POST" action="{{ url_for('register') }}" id="registerForm" novalidate>
+                    <div class="row">
+                        <!-- User Type Selection -->
+                        <div class="col-md-12 mb-4">
+                            <label class="form-label fw-bold">I am a:</label>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check card">
+                                        <input class="form-check-input d-none" type="radio" name="user_type" 
+                                               id="patient" value="patient" checked>
+                                        <label class="form-check-label card-body text-center" for="patient">
+                                            <i class="fas fa-user fa-3x text-primary mb-3"></i>
+                                            <h5>Patient</h5>
+                                            <p class="small text-muted mb-0">Pregnant woman seeking support and guidance</p>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check card">
+                                        <input class="form-check-input d-none" type="radio" name="user_type" 
+                                               id="doctor" value="doctor">
+                                        <label class="form-check-label card-body text-center" for="doctor">
+                                            <i class="fas fa-user-md fa-3x text-primary mb-3"></i>
+                                            <h5>Doctor/Provider</h5>
+                                            <p class="small text-muted mb-0">Healthcare professional monitoring patients</p>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Personal Information -->
+                        <div class="col-md-12">
+                            <h5 class="mb-4 border-bottom pb-2"><i class="fas fa-id-card"></i> Personal Information</h5>
+                        </div>
+
+                        <!-- Full Name -->
+                        <div class="col-md-6 mb-4">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="full_name" name="full_name" 
+                                       placeholder="John Doe" required>
+                                <label for="full_name"><i class="fas fa-user"></i> Full Name</label>
+                                <div class="invalid-feedback">
+                                    Please enter your full name.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Email Address -->
+                        <div class="col-md-6 mb-4">
+                            <div class="form-floating">
+                                <input type="email" class="form-control" id="email" name="email" 
+                                       placeholder="name@example.com" required>
+                                <label for="email"><i class="fas fa-envelope"></i> Email Address</label>
+                                <div class="invalid-feedback">
+                                    Please enter a valid email address.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Phone Number -->
+                        <div class="col-md-6 mb-4">
+                            <div class="form-floating">
+                                <input type="tel" class="form-control" id="phone" name="phone" 
+                                       placeholder="+1 (123) 456-7890">
+                                <label for="phone"><i class="fas fa-phone"></i> Phone Number (Optional)</label>
+                            </div>
+                        </div>
+
+                        <!-- Password Section -->
+                        <div class="col-md-12 mt-4">
+                            <h5 class="mb-4 border-bottom pb-2"><i class="fas fa-lock"></i> Security</h5>
+                        </div>
+
+                        <!-- Password -->
+                        <div class="col-md-6 mb-4">
+                            <div class="form-floating position-relative">
+                                <input type="password" class="form-control" id="password" name="password" 
+                                       placeholder="Password" required minlength="8">
+                                <label for="password"><i class="fas fa-key"></i> Password</label>
+                                <button type="button" class="btn btn-link position-absolute end-0 top-50 translate-middle-y" 
+                                        onclick="togglePassword('password')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <div class="invalid-feedback">
+                                    Password must be at least 8 characters.
+                                </div>
+                                <div class="progress mt-2" style="height: 4px;">
+                                    <div class="progress-bar" id="passwordStrength" style="width: 0%"></div>
+                                </div>
+                                <small class="text-muted" id="passwordHelp">Minimum 8 characters</small>
+                            </div>
+                        </div>
+
+                        <!-- Confirm Password -->
+                        <div class="col-md-6 mb-4">
+                            <div class="form-floating position-relative">
+                                <input type="password" class="form-control" id="confirm_password" 
+                                       placeholder="Confirm Password" required>
+                                <label for="confirm_password"><i class="fas fa-key"></i> Confirm Password</label>
+                                <button type="button" class="btn btn-link position-absolute end-0 top-50 translate-middle-y" 
+                                        onclick="togglePassword('confirm_password')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <div class="invalid-feedback">
+                                    Passwords do not match.
+                                </div>
+                                <div id="passwordMatch" class="mt-2"></div>
+                            </div>
+                        </div>
+
+                        <!-- Terms and Conditions -->
+                        <div class="col-md-12 mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="terms" name="terms" required>
+                                <label class="form-check-label" for="terms">
+                                    I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms and Conditions</a> 
+                                    and <a href="#" data-bs-toggle="modal" data-bs-target="#privacyModal">Privacy Policy</a>
+                                </label>
+                                <div class="invalid-feedback">
+                                    You must agree to the terms and conditions.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="col-md-12">
+                            <div class="d-grid gap-2 mb-4">
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <i class="fas fa-user-plus"></i> Create Account
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Already have account -->
+                <div class="text-center mt-4">
+                    <p class="mb-0">Already have an account? 
+                        <a href="{{ url_for('login') }}" class="text-decoration-none fw-bold">
+                            Login here
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Benefits Cards -->
+        <div class="row mt-4">
+            <div class="col-md-4 mb-3">
+                <div class="card h-100 border-0 bg-light">
+                    <div class="card-body text-center">
+                        <i class="fas fa-robot fa-2x text-primary mb-3"></i>
+                        <h6>AI Chatbot Support</h6>
+                        <p class="small text-muted mb-0">24/7 access to intelligent pregnancy assistant</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card h-100 border-0 bg-light">
+                    <div class="card-body text-center">
+                        <i class="fas fa-heartbeat fa-2x text-danger mb-3"></i>
+                        <h6>Symptom Analysis</h6>
+                        <p class="small text-muted mb-0">ML-based risk assessment and monitoring</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card h-100 border-0 bg-light">
+                    <div class="card-body text-center">
+                        <i class="fas fa-brain fa-2x text-info mb-3"></i>
+                        <h6>Mental Health</h6>
+                        <p class="small text-muted mb-0">Emotional well-being tracking and support</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Terms and Conditions Modal -->
+<div class="modal fade" id="termsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-file-contract"></i> Terms and Conditions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6>PregBot Terms of Service</h6>
+                <p><strong>Last Updated:</strong> December 6, 2024</p>
+                
+                <h6>1. Acceptance of Terms</h6>
+                <p>By creating an account on PregBot, you agree to be bound by these Terms and Conditions...</p>
+                
+                <h6>2. Medical Disclaimer</h6>
+                <p>PregBot provides informational support only and does not constitute medical advice...</p>
+                
+                <h6>3. User Responsibilities</h6>
+                <p>You are responsible for maintaining the confidentiality of your account...</p>
+                
+                <h6>4. Data Privacy</h6>
+                <p>We collect and process data as described in our Privacy Policy...</p>
+                
+                <h6>5. Limitation of Liability</h6>
+                <p>PregBot is not liable for any decisions made based on the information provided...</p>
+                
+                <p class="text-muted small">By registering, you acknowledge reading and agreeing to these terms.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Privacy Policy Modal -->
+<div class="modal fade" id="privacyModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-shield-alt"></i> Privacy Policy</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6>PregBot Privacy Policy</h6>
+                <p><strong>Last Updated:</strong> December 6, 2024</p>
+                
+                <h6>1. Information We Collect</h6>
+                <p>We collect personal information including name, email, phone number, and pregnancy-related data...</p>
+                
+                <h6>2. How We Use Your Information</h6>
+                <p>Your information is used to provide personalized pregnancy support, risk assessment, and connect you with healthcare providers...</p>
+                
+                <h6>3. Data Security</h6>
+                <p>We implement industry-standard security measures to protect your data...</p>
+                
+                <h6>4. Data Sharing</h6>
+                <p>We do not sell your data. Information is shared with healthcare providers only with your consent...</p>
+                
+                <h6>5. Your Rights</h6>
+                <p>You have the right to access, correct, or delete your personal information...</p>
+                
+                <p class="text-muted small">Your privacy is important to us. Contact us at privacy@pregbot.com for any concerns.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // User type selection styling
+        $('.form-check.card').click(function() {
+            $('.form-check.card').removeClass('border-primary');
+            $('.form-check.card').removeClass('bg-light');
+            $(this).addClass('border-primary');
+            $(this).addClass('bg-light');
+            $(this).find('input[type="radio"]').prop('checked', true);
+        });
+
+        // Initialize with patient selected
+        $('#patient').closest('.form-check.card').addClass('border-primary bg-light');
+
+        // Password strength checker
+        $('#password').on('input', function() {
+            checkPasswordStrength(this.value);
+            checkPasswordMatch();
+        });
+
+        $('#confirm_password').on('input', function() {
+            checkPasswordMatch();
+        });
+
+        // Form validation
+        $('#registerForm').submit(function(e) {
+            e.preventDefault();
+            
+            if (validateForm()) {
+                this.submit();
+            }
+        });
+
+        // Real-time form validation
+        $('input, select, textarea').on('input change', function() {
+            validateField(this);
+        });
+    });
+
+    function togglePassword(fieldId) {
+        const field = $('#' + fieldId);
+        const type = field.attr('type') === 'password' ? 'text' : 'password';
+        field.attr('type', type);
+        
+        const icon = field.siblings('button').find('i');
+        icon.toggleClass('fa-eye fa-eye-slash');
+    }
+
+    function checkPasswordStrength(password) {
+        let strength = 0;
+        const progress = $('#passwordStrength');
+        const help = $('#passwordHelp');
+        
+        if (password.length >= 8) strength += 25;
+        if (/[A-Z]/.test(password)) strength += 25;
+        if (/[0-9]/.test(password)) strength += 25;
+        if (/[^A-Za-z0-9]/.test(password)) strength += 25;
+        
+        progress.css('width', strength + '%');
+        
+        // Color coding
+        if (strength < 50) {
+            progress.removeClass('bg-success bg-warning').addClass('bg-danger');
+            help.text('Weak password');
+        } else if (strength < 75) {
+            progress.removeClass('bg-danger bg-success').addClass('bg-warning');
+            help.text('Moderate password');
+        } else {
+            progress.removeClass('bg-danger bg-warning').addClass('bg-success');
+            help.text('Strong password');
+        }
+    }
+
+    function checkPasswordMatch() {
+        const password = $('#password').val();
+        const confirm = $('#confirm_password').val();
+        const matchDiv = $('#passwordMatch');
+        
+        if (!confirm) {
+            matchDiv.html('');
+            $('#confirm_password').removeClass('is-valid is-invalid');
+            return;
+        }
+        
+        if (password === confirm) {
+            $('#confirm_password').removeClass('is-invalid').addClass('is-valid');
+            matchDiv.html('<small class="text-success"><i class="fas fa-check-circle"></i> Passwords match</small>');
+        } else {
+            $('#confirm_password').removeClass('is-valid').addClass('is-invalid');
+            matchDiv.html('<small class="text-danger"><i class="fas fa-times-circle"></i> Passwords do not match</small>');
+        }
+    }
+
+    function validateField(field) {
+        const $field = $(field);
+        const value = $field.val();
+        const isRequired = $field.prop('required');
+        const fieldId = $field.attr('id');
+        
+        $field.removeClass('is-invalid is-valid');
+        
+        if (isRequired && !value) {
+            $field.addClass('is-invalid');
+            return false;
+        }
+        
+        // Specific field validations
+        switch(fieldId) {
+            case 'email':
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (value && !emailRegex.test(value)) {
+                    $field.addClass('is-invalid');
+                    return false;
+                }
+                break;
+                
+            case 'phone':
+                const phoneRegex = /^[\+]?[0-9\s\-\(\)]+$/;
+                if (value && !phoneRegex.test(value)) {
+                    $field.addClass('is-invalid');
+                    return false;
+                }
+                break;
+                
+            case 'password':
+                if (value && value.length < 8) {
+                    $field.addClass('is-invalid');
+                    return false;
+                }
+                break;
+        }
+        
+        if (value) {
+            $field.addClass('is-valid');
+        }
+        
+        return true;
+    }
+
+    function validateForm() {
+        let isValid = true;
+        
+        // Validate all fields
+        $('#registerForm input[required], #registerForm select[required]').each(function() {
+            if (!validateField(this)) {
+                isValid = false;
+            }
+        });
+        
+        // Check passwords match
+        const password = $('#password').val();
+        const confirm = $('#confirm_password').val();
+        if (password !== confirm) {
+            $('#confirm_password').addClass('is-invalid');
+            showToast('Passwords do not match', 'warning');
+            isValid = false;
+        }
+        
+        // Check terms accepted
+        if (!$('#terms').prop('checked')) {
+            $('#terms').addClass('is-invalid');
+            showToast('Please accept the terms and conditions', 'warning');
+            isValid = false;
+        }
+        
+        if (!isValid) {
+            showToast('Please correct the errors in the form', 'danger');
+        }
+        
+        return isValid;
+    }
+
+    // Demo registration (for testing)
+    function fillDemoRegistration(type) {
+        if (type === 'patient') {
+            $('#full_name').val('Jane Doe');
+            $('#email').val('patient@example.com');
+            $('#phone').val('+1 (555) 123-4567');
+            $('#password').val('password123');
+            $('#confirm_password').val('password123');
+            $('#patient').click();
+        } else {
+            $('#full_name').val('Dr. John Smith');
+            $('#email').val('doctor@example.com');
+            $('#phone').val('+1 (555) 987-6543');
+            $('#password').val('password123');
+            $('#confirm_password').val('password123');
+            $('#doctor').click();
+        }
+        
+        $('#terms').prop('checked', true);
+        showToast('Demo registration form filled', 'info');
+        
+        // Trigger validation
+        $('input').trigger('input');
+    }
+</script>
+
+<!-- Demo Registration Section (Development Only) -->
+{% if request.host and ('localhost' in request.host or '127.0.0.1' in request.host) %}
+<script>
+    $(document).ready(function() {
+        const demoSection = `
+            <div class="card border-info mt-4">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="fas fa-flask"></i> Demo Registration (Development Only)</h6>
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted">Quickly fill the form with demo data:</p>
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <button class="btn btn-outline-success w-100" onclick="fillDemoRegistration('patient')">
+                                <i class="fas fa-user"></i> Fill Patient Registration
+                            </button>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <button class="btn btn-outline-warning w-100" onclick="fillDemoRegistration('doctor')">
+                                <i class="fas fa-user-md"></i> Fill Doctor Registration
+                            </button>
+                        </div>
+                    </div>
+                    <small class="text-muted">Note: These credentials will create a working demo account.</small>
+                </div>
+            </div>
+        `;
+        $('.row.justify-content-center .col-md-8').append(demoSection);
+    });
+</script>
+{% endif %}
+{% endblock %}

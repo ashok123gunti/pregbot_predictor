@@ -1,0 +1,910 @@
+{% extends "layout.html" %}
+{% block title %}My Profile - PregBot{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-pic {
+        width: 150px;
+        height: 150px;
+        object-fit: cover;
+        border: 5px solid white;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .stats-card {
+        border-radius: 10px;
+        padding: 15px;
+        color: white;
+        margin-bottom: 15px;
+    }
+    .nav-tabs .nav-link {
+        border: none;
+        color: #6c757d;
+        font-weight: 500;
+    }
+    .nav-tabs .nav-link.active {
+        color: #007bff;
+        border-bottom: 3px solid #007bff;
+        background: none;
+    }
+    .info-item {
+        border-bottom: 1px solid #eee;
+        padding: 10px 0;
+    }
+    .info-item:last-child {
+        border-bottom: none;
+    }
+    .badge-pregnancy {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        font-size: 0.9em;
+        padding: 5px 10px;
+        border-radius: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Left Column: Profile Overview -->
+    <div class="col-md-4">
+        <!-- Profile Card -->
+        <div class="card shadow mb-4">
+            <div class="card-body text-center p-4">
+                <!-- Profile Picture -->
+                <div class="mb-4">
+                    <div class="position-relative d-inline-block">
+                        <img src="https://ui-avatars.com/api/?name={{ current_user.full_name }}&background=007bff&color=fff&size=150" 
+                             alt="Profile" class="profile-pic rounded-circle">
+                        <button class="btn btn-primary btn-sm rounded-circle position-absolute bottom-0 end-0" 
+                                data-bs-toggle="modal" data-bs-target="#changePhotoModal">
+                            <i class="fas fa-camera"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- User Info -->
+                <h4 class="mb-1">{{ current_user.full_name }}</h4>
+                <p class="text-muted mb-3">
+                    <i class="fas fa-{{ 'user-md' if current_user.user_type == 'doctor' else 'user' }}"></i>
+                    {{ 'Healthcare Provider' if current_user.user_type == 'doctor' else 'Patient' }}
+                </p>
+                
+                <!-- Email & Phone -->
+                <div class="mb-3">
+                    <p class="mb-1"><i class="fas fa-envelope"></i> {{ current_user.email }}</p>
+                    {% if current_user.phone %}
+                    <p class="mb-0"><i class="fas fa-phone"></i> {{ current_user.phone }}</p>
+                    {% else %}
+                    <p class="mb-0 text-muted"><i class="fas fa-phone"></i> Not provided</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Member Since -->
+                <div class="alert alert-light">
+                    <i class="fas fa-calendar-alt"></i> Member since {{ current_user.created_at.strftime('%B %Y') }}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Stats -->
+        {% if current_user.user_type == 'patient' and profile %}
+        <div class="card shadow">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-chart-line"></i> Pregnancy Overview</h6>
+            </div>
+            <div class="card-body">
+                <!-- Trimester Progress -->
+               
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Trimester Progress</span>
+                        <span class="fw-bold">{{ profile.trimester if profile and profile.trimester else 'N/A' }}/3</span>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar bg-success" 
+                            style="width: {{ ((profile.trimester/3)*100 if profile and profile.trimester else 0)|round }}%">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Stats Grid -->
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <div class="stats-card bg-primary">
+                            <i class="fas fa-heartbeat fa-2x mb-2"></i>
+                            <h5 class="mb-0">{{ profile.blood_pressure_category|default('N/A')|title }}</h5>
+                            <small>Blood Pressure</small>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="stats-card bg-info">
+                            <i class="fas fa-birthday-cake fa-2x mb-2"></i>
+                            <h5 class="mb-0">{{ profile.age or 'N/A' }}</h5>
+                            <small>Age</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- BMI (if weight and height available) -->
+            
+                {% if profile and profile.weight is not none and profile.height is not none %}
+                    {% set weight = profile.weight|float %}
+                    {% set height = profile.height|float %}
+                    {% if weight > 0 and height > 0 %}
+                        {% set bmi = weight / ((height/100) ** 2) %}
+                        <div class="alert alert-{{ 'success' if bmi >= 18.5 and bmi <= 24.9 else 'warning' }}">
+                            <h6><i class="fas fa-weight"></i> BMI: {{ "%.1f"|format(bmi) }}</h6>
+                            <small class="mb-0">
+                                {% if bmi < 18.5 %}Underweight
+                                {% elif bmi <= 24.9 %}Healthy
+                                {% elif bmi <= 29.9 %}Overweight
+                                {% else %}Obese
+                                {% endif %}
+                            </small>
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Right Column: Profile Details -->
+    <div class="col-md-8">
+        <!-- Tabs Navigation -->
+        <ul class="nav nav-tabs mb-4" id="profileTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="personal-tab" data-bs-toggle="tab" 
+                        data-bs-target="#personal" type="button">
+                    <i class="fas fa-user-circle"></i> Personal Info
+                </button>
+            </li>
+            {% if current_user.user_type == 'patient' %}
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="medical-tab" data-bs-toggle="tab" 
+                        data-bs-target="#medical" type="button">
+                    <i class="fas fa-heartbeat"></i> Medical Info
+                </button>
+            </li>
+            {% endif %}
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="security-tab" data-bs-toggle="tab" 
+                        data-bs-target="#security" type="button">
+                    <i class="fas fa-shield-alt"></i> Security
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="preferences-tab" data-bs-toggle="tab" 
+                        data-bs-target="#preferences" type="button">
+                    <i class="fas fa-cog"></i> Preferences
+                </button>
+            </li>
+        </ul>
+        
+        <!-- Tabs Content -->
+        <div class="tab-content" id="profileTabsContent">
+            <!-- Personal Information Tab -->
+            <div class="tab-pane fade show active" id="personal" role="tabpanel">
+                <div class="card shadow">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-user-edit"></i> Update Personal Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('profile') }}" id="personalForm">
+                            {% if current_user.user_type == 'patient' %}
+                            <!-- Patient Specific Fields -->
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label">Age</label>
+                                    <input type="number" class="form-control" name="age" 
+                                           value="{{ profile.age if profile else '' }}" min="18" max="50">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Current Trimester</label>
+                                    <select class="form-select" name="trimester">
+                                        <option value="">Select trimester</option>
+                                        <option value="1" {{ 'selected' if profile and profile.trimester == 1 }}>First Trimester (1-13 weeks)</option>
+                                        <option value="2" {{ 'selected' if profile and profile.trimester == 2 }}>Second Trimester (14-27 weeks)</option>
+                                        <option value="3" {{ 'selected' if profile and profile.trimester == 3 }}>Third Trimester (28-40 weeks)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label">Blood Pressure Category</label>
+                                    <select class="form-select" name="blood_pressure">
+                                        <option value="">Select category</option>
+                                        <option value="low" {{ 'selected' if profile and profile.blood_pressure_category == 'low' }}>Low</option>
+                                        <option value="normal" {{ 'selected' if profile and profile.blood_pressure_category == 'normal' }}>Normal</option>
+                                        <option value="high" {{ 'selected' if profile and profile.blood_pressure_category == 'high' }}>High</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Weight (kg)</label>
+                                    <input type="number" class="form-control" name="weight" 
+                                           value="{{ profile.weight if profile else '' }}" step="0.1" min="30" max="200">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Height (cm)</label>
+                                    <input type="number" class="form-control" name="height" 
+                                           value="{{ profile.height if profile else '' }}" min="100" max="250">
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Common Fields -->
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label">Full Name</label>
+                                    <input type="text" class="form-control" name="full_name" 
+                                           value="{{ current_user.full_name }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Email Address</label>
+                                    <input type="email" class="form-control" value="{{ current_user.email }}" disabled>
+                                    <small class="text-muted">Contact support to change email</small>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label">Phone Number</label>
+                                    <input type="tel" class="form-control" name="phone" 
+                                           value="{{ current_user.phone if current_user.phone else '' }}">
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Medical Information Tab (Patients Only) -->
+            {% if current_user.user_type == 'patient' %}
+            <div class="tab-pane fade" id="medical" role="tabpanel">
+                <div class="card shadow">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-file-medical"></i> Medical History & Conditions</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('profile') }}" id="medicalForm">
+                            <!-- Medical History -->
+                            <div class="mb-4">
+                                <label class="form-label">Medical History</label>
+                                <textarea class="form-control" name="medical_history" rows="4" 
+                                          placeholder="List any previous medical conditions, surgeries, or relevant history...">{{ profile.medical_history if profile else '' }}</textarea>
+                                <small class="text-muted">Include past pregnancies, complications, chronic conditions, etc.</small>
+                            </div>
+                            
+                            <!-- Allergies -->
+                            <div class="mb-4">
+                                <label class="form-label">Allergies</label>
+                                <textarea class="form-control" name="allergies" rows="3" 
+                                          placeholder="List any allergies to medications, foods, or other substances...">{{ profile.allergies if profile else '' }}</textarea>
+                            </div>
+                            
+                            <!-- Current Conditions -->
+                            <div class="mb-4">
+                                <label class="form-label">Current Pregnancy Conditions</label>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="anemia" name="conditions[]" value="anemia">
+                                            <label class="form-check-label" for="anemia">Anemia</label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="gestational_diabetes" name="conditions[]" value="gestational_diabetes">
+                                            <label class="form-check-label" for="gestational_diabetes">Gestational Diabetes</label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="hypertension" name="conditions[]" value="hypertension">
+                                            <label class="form-check-label" for="hypertension">Hypertension</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="preeclampsia" name="conditions[]" value="preeclampsia">
+                                            <label class="form-check-label" for="preeclampsia">Preeclampsia (History)</label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="thyroid" name="conditions[]" value="thyroid">
+                                            <label class="form-check-label" for="thyroid">Thyroid Issues</label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="other_condition" name="conditions[]" value="other">
+                                            <label class="form-check-label" for="other_condition">Other (specify below)</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <textarea class="form-control mt-2" id="other_condition_details" rows="2" 
+                                          placeholder="Specify other conditions..."></textarea>
+                            </div>
+                            
+                            <!-- Emergency Contact -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold"><i class="fas fa-phone-emergency"></i> Emergency Contact</label>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <input type="text" class="form-control" placeholder="Contact Name">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <input type="tel" class="form-control" placeholder="Phone Number">
+                                    </div>
+                                    <div class="col-md-12">
+                                        <input type="text" class="form-control" placeholder="Relationship (e.g., Spouse, Parent)">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Medical Information
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Medical Documents (Placeholder) -->
+                <div class="card shadow mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-file-upload"></i> Medical Documents</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Upload and manage your medical documents (reports, scans, prescriptions).</p>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> Document upload feature will be available soon.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Security Tab -->
+            <div class="tab-pane fade" id="security" role="tabpanel">
+                <div class="card shadow">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-user-shield"></i> Account Security</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Change Password -->
+                        <div class="mb-5">
+                            <h6 class="mb-3">Change Password</h6>
+                            <form id="changePasswordForm">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Current Password</label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" id="currentPassword" required>
+                                            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('currentPassword')">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">New Password</label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" id="newPassword" required minlength="8">
+                                            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('newPassword')">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                        <div class="progress mt-2" style="height: 4px;">
+                                            <div class="progress-bar" id="newPasswordStrength" style="width: 0%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Confirm New Password</label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" id="confirmNewPassword" required>
+                                            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('confirmNewPassword')">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                        <div id="passwordMatchStatus" class="mt-2"></div>
+                                    </div>
+                                </div>
+                                
+                                <button type="button" class="btn btn-primary" onclick="changePassword()">
+                                    <i class="fas fa-key"></i> Update Password
+                                </button>
+                            </form>
+                        </div>
+                        
+                        <!-- Two-Factor Authentication -->
+                        <div class="mb-5">
+                            <h6 class="mb-3">Two-Factor Authentication</h6>
+                            <div class="alert alert-warning">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-shield-alt"></i>
+                                        <strong>2FA is currently disabled</strong>
+                                        <p class="mb-0 small">Add an extra layer of security to your account.</p>
+                                    </div>
+                                    <button class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#enable2FAModal">
+                                        Enable 2FA
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Login History -->
+                        <div>
+                            <h6 class="mb-3">Recent Login Activity</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Date & Time</th>
+                                            <th>IP Address</th>
+                                            <th>Device</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Just now</td>
+                                            <td>127.0.0.1</td>
+                                            <td>Chrome, Windows</td>
+                                            <td><span class="badge bg-success">Success</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Yesterday, 14:30</td>
+                                            <td>192.168.1.100</td>
+                                            <td>Firefox, Android</td>
+                                            <td><span class="badge bg-success">Success</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Preferences Tab -->
+            <div class="tab-pane fade" id="preferences" role="tabpanel">
+                <div class="card shadow">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-sliders-h"></i> Account Preferences</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Notification Preferences -->
+                        <div class="mb-5">
+                            <h6 class="mb-4"><i class="fas fa-bell"></i> Notification Settings</h6>
+                            
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
+                                    <label class="form-check-label" for="emailNotifications">
+                                        <strong>Email Notifications</strong>
+                                        <p class="small text-muted mb-0">Receive updates, reminders, and alerts via email</p>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="pushNotifications" checked>
+                                    <label class="form-check-label" for="pushNotifications">
+                                        <strong>Push Notifications</strong>
+                                        <p class="small text-muted mb-0">Get real-time alerts in your browser</p>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="riskAlerts" checked>
+                                    <label class="form-check-label" for="riskAlerts">
+                                        <strong>High-Risk Alerts</strong>
+                                        <p class="small text-muted mb-0">Get immediate notifications for high-risk assessments</p>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="appointmentReminders" checked>
+                                    <label class="form-check-label" for="appointmentReminders">
+                                        <strong>Appointment Reminders</strong>
+                                        <p class="small text-muted mb-0">Reminders for doctor appointments and checkups</p>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Privacy Preferences -->
+                        <div class="mb-5">
+                            <h6 class="mb-4"><i class="fas fa-user-secret"></i> Privacy Settings</h6>
+                            
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="shareWithDoctor" checked>
+                                    <label class="form-check-label" for="shareWithDoctor">
+                                        <strong>Share Data with Healthcare Providers</strong>
+                                        <p class="small text-muted mb-0">Allow doctors to view your symptom and risk data</p>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="anonymousAnalytics" checked>
+                                    <label class="form-check-label" for="anonymousAnalytics">
+                                        <strong>Anonymous Analytics</strong>
+                                        <p class="small text-muted mb-0">Help improve PregBot by sharing anonymous usage data</p>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Data Retention Period</label>
+                                <select class="form-select" id="dataRetention">
+                                    <option value="6">6 months</option>
+                                    <option value="12" selected>1 year</option>
+                                    <option value="24">2 years</option>
+                                    <option value="60">5 years</option>
+                                </select>
+                                <small class="text-muted">How long to keep your chat history and symptom logs</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Display Preferences -->
+                        <div>
+                            <h6 class="mb-4"><i class="fas fa-palette"></i> Display Preferences</h6>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Theme</label>
+                                <select class="form-select" id="themeSelect">
+                                    <option value="light">Light</option>
+                                    <option value="dark">Dark</option>
+                                    <option value="auto">Auto (System)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Language</label>
+                                <select class="form-select" id="languageSelect">
+                                    <option value="en" selected>English</option>
+                                    <option value="es">Español</option>
+                                    <option value="fr">Français</option>
+                                    <option value="hi">हिन्दी</option>
+                                    <option value="ta">தமிழ்</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Font Size</label>
+                                <select class="form-select" id="fontSize">
+                                    <option value="small">Small</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="large">Large</option>
+                                    <option value="xlarge">Extra Large</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <button type="button" class="btn btn-primary mt-3" onclick="savePreferences()">
+                            <i class="fas fa-save"></i> Save Preferences
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Change Photo Modal -->
+<div class="modal fade" id="changePhotoModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-camera"></i> Update Profile Picture</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <img src="https://ui-avatars.com/api/?name={{ current_user.full_name }}&background=007bff&color=fff&size=200" 
+                         alt="Current" class="img-fluid rounded-circle mb-3" style="width: 150px;">
+                </div>
+                
+                <form id="photoForm">
+                    <div class="mb-3">
+                        <label class="form-label">Upload New Photo</label>
+                        <input type="file" class="form-control" id="profilePhoto" accept="image/*">
+                        <small class="text-muted">Max size: 2MB. Supported: JPG, PNG, GIF</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Or use Gravatar</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="useGravatar">
+                            <label class="form-check-label" for="useGravatar">
+                                Use my Gravatar profile picture
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="removePhoto()">
+                    <i class="fas fa-trash"></i> Remove Photo
+                </button>
+                <button type="button" class="btn btn-primary" onclick="updatePhoto()">
+                    <i class="fas fa-upload"></i> Update Photo
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Enable 2FA Modal -->
+<div class="modal fade" id="enable2FAModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-shield-alt"></i> Enable Two-Factor Authentication</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <div class="mb-3">
+                        <i class="fas fa-mobile-alt fa-4x text-primary"></i>
+                    </div>
+                    <h5>Secure Your Account</h5>
+                    <p class="text-muted">Add an extra layer of security by requiring a code from your phone when logging in.</p>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>How it works:</strong>
+                    <ul class="mb-0">
+                        <li>Download an authenticator app (Google Authenticator, Authy)</li>
+                        <li>Scan the QR code with your phone</li>
+                        <li>Enter the 6-digit code to verify</li>
+                    </ul>
+                </div>
+                
+                <div class="text-center my-4">
+                    <!-- QR Code Placeholder -->
+                    <div class="bg-light p-4 d-inline-block">
+                        <i class="fas fa-qrcode fa-5x text-muted"></i>
+                        <p class="mt-2 small">QR Code will be generated here</p>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Verification Code</label>
+                    <input type="text" class="form-control text-center" placeholder="000000" maxlength="6" 
+                           style="letter-spacing: 10px; font-size: 1.5rem;">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary">Enable 2FA</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Initialize tabs
+        const tabTriggerList = [].slice.call(document.querySelectorAll('#profileTabs button'));
+        tabTriggerList.forEach(function (tabTriggerEl) {
+            new bootstrap.Tab(tabTriggerEl);
+        });
+
+        // Password strength checker
+        $('#newPassword').on('input', function() {
+            checkPasswordStrength(this.value);
+            checkPasswordMatchNew();
+        });
+
+        $('#confirmNewPassword').on('input', checkPasswordMatchNew);
+
+        // Load saved preferences
+        loadPreferences();
+
+        // Initialize form validation
+        $('form').on('submit', function(e) {
+            if (!validateForm(this.id)) {
+                e.preventDefault();
+            }
+        });
+    });
+
+    function togglePasswordVisibility(fieldId) {
+        const field = $('#' + fieldId);
+        const type = field.attr('type') === 'password' ? 'text' : 'password';
+        field.attr('type', type);
+        
+        const icon = field.parent().find('i');
+        icon.toggleClass('fa-eye fa-eye-slash');
+    }
+
+    function checkPasswordStrength(password) {
+        let strength = 0;
+        const progress = $('#newPasswordStrength');
+        
+        if (password.length >= 8) strength += 25;
+        if (/[A-Z]/.test(password)) strength += 25;
+        if (/[0-9]/.test(password)) strength += 25;
+        if (/[^A-Za-z0-9]/.test(password)) strength += 25;
+        
+        progress.css('width', strength + '%');
+        
+        // Color coding
+        if (strength < 50) {
+            progress.removeClass('bg-success bg-warning').addClass('bg-danger');
+        } else if (strength < 75) {
+            progress.removeClass('bg-danger bg-success').addClass('bg-warning');
+        } else {
+            progress.removeClass('bg-danger bg-warning').addClass('bg-success');
+        }
+    }
+
+    function checkPasswordMatchNew() {
+        const password = $('#newPassword').val();
+        const confirm = $('#confirmNewPassword').val();
+        const matchDiv = $('#passwordMatchStatus');
+        
+        if (!confirm) {
+            matchDiv.html('');
+            $('#confirmNewPassword').removeClass('is-valid is-invalid');
+            return;
+        }
+        
+        if (password === confirm) {
+            $('#confirmNewPassword').removeClass('is-invalid').addClass('is-valid');
+            matchDiv.html('<small class="text-success"><i class="fas fa-check-circle"></i> Passwords match</small>');
+        } else {
+            $('#confirmNewPassword').removeClass('is-valid').addClass('is-invalid');
+            matchDiv.html('<small class="text-danger"><i class="fas fa-times-circle"></i> Passwords do not match</small>');
+        }
+    }
+
+    function changePassword() {
+        const currentPass = $('#currentPassword').val();
+        const newPass = $('#newPassword').val();
+        const confirmPass = $('#confirmNewPassword').val();
+        
+        if (!currentPass || !newPass || !confirmPass) {
+            showToast('Please fill in all password fields', 'warning');
+            return;
+        }
+        
+        if (newPass !== confirmPass) {
+            showToast('New passwords do not match', 'danger');
+            return;
+        }
+        
+        if (newPass.length < 8) {
+            showToast('New password must be at least 8 characters', 'danger');
+            return;
+        }
+        
+        // In real app, this would call an API
+        showToast('Password updated successfully!', 'success');
+        $('#changePasswordForm')[0].reset();
+        $('#newPasswordStrength').css('width', '0%');
+        $('#passwordMatchStatus').html('');
+    }
+
+    function updatePhoto() {
+        const fileInput = $('#profilePhoto')[0];
+        const useGravatar = $('#useGravatar').prop('checked');
+        
+        if (!fileInput.files[0] && !useGravatar) {
+            showToast('Please select a photo or enable Gravatar', 'warning');
+            return;
+        }
+        
+        // In real app, this would upload to server
+        showToast('Profile picture updated successfully!', 'success');
+        $('#changePhotoModal').modal('hide');
+    }
+
+    function removePhoto() {
+        if (confirm('Are you sure you want to remove your profile picture?')) {
+            // In real app, this would call an API
+            showToast('Profile picture removed', 'info');
+            $('#changePhotoModal').modal('hide');
+        }
+    }
+
+    function loadPreferences() {
+        // Load from localStorage or server
+        const theme = localStorage.getItem('theme') || 'light';
+        const language = localStorage.getItem('language') || 'en';
+        const fontSize = localStorage.getItem('fontSize') || 'medium';
+        
+        $('#themeSelect').val(theme);
+        $('#languageSelect').val(language);
+        $('#fontSize').val(fontSize);
+        
+        // Load other preferences
+        const preferences = JSON.parse(localStorage.getItem('preferences') || '{}');
+        $('#emailNotifications').prop('checked', preferences.emailNotifications !== false);
+        $('#pushNotifications').prop('checked', preferences.pushNotifications !== false);
+        $('#riskAlerts').prop('checked', preferences.riskAlerts !== false);
+        $('#appointmentReminders').prop('checked', preferences.appointmentReminders !== false);
+        $('#shareWithDoctor').prop('checked', preferences.shareWithDoctor !== false);
+        $('#anonymousAnalytics').prop('checked', preferences.anonymousAnalytics !== false);
+        $('#dataRetention').val(preferences.dataRetention || '12');
+    }
+
+    function savePreferences() {
+        const preferences = {
+            emailNotifications: $('#emailNotifications').prop('checked'),
+            pushNotifications: $('#pushNotifications').prop('checked'),
+            riskAlerts: $('#riskAlerts').prop('checked'),
+            appointmentReminders: $('#appointmentReminders').prop('checked'),
+            shareWithDoctor: $('#shareWithDoctor').prop('checked'),
+            anonymousAnalytics: $('#anonymousAnalytics').prop('checked'),
+            dataRetention: $('#dataRetention').val()
+        };
+        
+        // Save theme and language
+        localStorage.setItem('theme', $('#themeSelect').val());
+        localStorage.setItem('language', $('#languageSelect').val());
+        localStorage.setItem('fontSize', $('#fontSize').val());
+        localStorage.setItem('preferences', JSON.stringify(preferences));
+        
+        // Apply theme
+        const theme = $('#themeSelect').val();
+        if (theme === 'dark') {
+            $('body').addClass('dark-mode');
+        } else if (theme === 'light') {
+            $('body').removeClass('dark-mode');
+        } else {
+            // Auto mode - would check system preference
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                $('body').addClass('dark-mode');
+            } else {
+                $('body').removeClass('dark-mode');
+            }
+        }
+        
+        showToast('Preferences saved successfully!', 'success');
+    }
+
+    function validateForm(formId) {
+        let isValid = true;
+        const form = $('#' + formId);
+        
+        form.find('input[required], select[required], textarea[required]').each(function() {
+            if (!$(this).val()) {
+                $(this).addClass('is-invalid');
+                isValid = false;
+            } else {
+                $(this).removeClass('is-invalid');
+            }
+        });
+        
+        if (!isValid) {
+            showToast('Please fill in all required fields', 'warning');
+        }
+        
+        return isValid;
+    }
+
+    // Medical conditions checkboxes
+    $('#other_condition').change(function() {
+        if ($(this).prop('checked')) {
+            $('#other_condition_details').prop('required', true);
+        } else {
+            $('#other_condition_details').prop('required', false);
+        }
+    });
+</script>
+{% endblock %}

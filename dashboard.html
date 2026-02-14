@@ -1,0 +1,712 @@
+{% extends "layout.html" %}
+{% block title %}Dashboard - PregBot{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Compact Dashboard Styles */
+    .dashboard-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        padding: 20px;
+        color: white;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+    }
+    
+    .welcome-text {
+        font-size: 1rem;
+        opacity: 0.9;
+        margin-bottom: 0;
+    }
+    
+    .pregnancy-progress {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 12px;
+        backdrop-filter: blur(10px);
+    }
+    
+    /* Compact Stat Cards */
+    .stat-card {
+        background: white;
+        border-radius: 10px;
+        padding: 15px;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+        border: 1px solid #e9ecef;
+        height: 100%;
+        transition: transform 0.2s;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        margin-bottom: 10px;
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 2px;
+    }
+    
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 5px;
+    }
+    
+    /* Compact Quick Actions */
+    .quick-action-card {
+        background: white;
+        border-radius: 10px;
+        padding: 15px;
+        text-align: center;
+        transition: all 0.2s;
+        cursor: pointer;
+        border: 1px solid #e9ecef;
+        height: 100%;
+    }
+    
+    .quick-action-card:hover {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+    }
+    
+    .quick-action-card:hover .action-icon {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+    }
+    
+    .action-icon {
+        width: 45px;
+        height: 45px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        margin: 0 auto 10px;
+        transition: all 0.2s;
+    }
+    
+    .action-title {
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-bottom: 5px;
+    }
+    
+    /* Compact Activity Items */
+    .activity-card {
+        border: 1px solid #e9ecef;
+        border-radius: 10px;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+        height: 100%;
+    }
+    
+    .card-header {
+        background: white;
+        border-bottom: 1px solid #e9ecef;
+        padding: 12px 15px;
+    }
+    
+    .card-header h5 {
+        font-size: 1rem;
+        margin: 0;
+    }
+    
+    .card-body {
+        padding: 15px;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .activity-item {
+        padding: 10px 0;
+        border-bottom: 1px solid #f8f9fa;
+        display: flex;
+        align-items: center;
+    }
+    
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+    
+    .activity-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 12px;
+        flex-shrink: 0;
+        font-size: 0.9rem;
+    }
+    
+    .activity-content {
+        flex-grow: 1;
+        min-width: 0; /* Prevent overflow */
+    }
+    
+    .activity-title {
+        font-weight: 500;
+        font-size: 0.85rem;
+        margin-bottom: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .activity-time {
+        font-size: 0.75rem;
+        color: #6c757d;
+    }
+    
+    /* Risk Indicators */
+    .risk-indicator {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        display: inline-block;
+    }
+    
+    /* Progress Bar */
+    .trimester-progress {
+        height: 6px;
+        border-radius: 3px;
+        background: #e9ecef;
+        overflow: hidden;
+        margin-bottom: 5px;
+    }
+    
+    .trimester-progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #28a745, #20c997);
+        border-radius: 3px;
+    }
+    
+    /* Compact Empty States */
+    .empty-state {
+        text-align: center;
+        padding: 20px;
+        color: #6c757d;
+    }
+    
+    .empty-icon {
+        font-size: 2rem;
+        opacity: 0.5;
+        margin-bottom: 10px;
+    }
+    
+    /* Emergency Alert */
+    .emergency-alert {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+        border-radius: 10px;
+        padding: 15px;
+        color: white;
+        margin-top: 20px;
+    }
+    
+    /* Scrollbar Styling */
+    .card-body::-webkit-scrollbar {
+        width: 4px;
+    }
+    
+    .card-body::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+    
+    .card-body::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 10px;
+    }
+    
+    /* Responsive Adjustments */
+    @media (max-width: 768px) {
+        .dashboard-header {
+            padding: 15px;
+        }
+        
+        .stat-card, .quick-action-card {
+            padding: 12px;
+        }
+        
+        .stat-value {
+            font-size: 1.3rem;
+        }
+        
+        .action-icon {
+            width: 40px;
+            height: 40px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Compact Dashboard Header -->
+<div class="dashboard-header">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h4 class="mb-1">Welcome, {{ current_user.full_name.split()[0] }}! 👋</h4>
+            <p class="welcome-text">Your pregnancy dashboard • {% if profile and profile.trimester %}Trimester {{ profile.trimester }}{% else %}Setup your profile{% endif %}</p>
+        </div>
+        <div class="col-md-4">
+            <div class="pregnancy-progress">
+                <div class="d-flex justify-content-between mb-2">
+                    <small>Progress</small>
+                    <small class="fw-bold">
+                        {% if profile and profile.trimester %}
+                            {{ profile.trimester }}/3
+                        {% else %}
+                            Setup
+                        {% endif %}
+                    </small>
+                </div>
+                <div class="trimester-progress">
+                    <div class="trimester-progress-bar" style="width: {% if profile and profile.trimester %}{{ (profile.trimester/3)*100 }}%{% else %}33%{% endif %}"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Compact Stats Overview -->
+<div class="row mb-3">
+    <div class="col-6 col-md-3 mb-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: rgba(102, 126, 234, 0.1); color: #667eea;">
+                <i class="fas fa-comments"></i>
+            </div>
+            <div class="stat-value">
+                {% set chat_count = chats|length if chats else 0 %}
+                {{ chat_count }}
+            </div>
+            <div class="stat-label">Chats</div>
+        </div>
+    </div>
+    
+    <div class="col-6 col-md-3 mb-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: rgba(40, 167, 69, 0.1); color: #28a745;">
+                <i class="fas fa-heartbeat"></i>
+            </div>
+            <div class="stat-value">
+                {% set symptom_count = symptoms|length if symptoms else 0 %}
+                {{ symptom_count }}
+            </div>
+            <div class="stat-label">Symptoms</div>
+        </div>
+    </div>
+    
+    <div class="col-6 col-md-3 mb-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: rgba(255, 193, 7, 0.1); color: #ffc107;">
+                <i class="fas fa-brain"></i>
+            </div>
+            <div class="stat-value">
+                {% if mental_health_stats and mental_health_stats.avg_mood %}
+                    {{ "%.1f"|format(mental_health_stats.avg_mood) }}
+                {% else %}
+                    -
+                {% endif %}
+            </div>
+            <div class="stat-label">Mood</div>
+        </div>
+    </div>
+    
+    <div class="col-6 col-md-3 mb-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: rgba(220, 53, 69, 0.1); color: #dc3545;">
+                <i class="fas fa-exclamation"></i>
+            </div>
+            <div class="stat-value">
+                {% set high_risk_count = risks|selectattr('prediction', 'equalto', 'high')|list|length if risks else 0 %}
+                {{ high_risk_count }}
+            </div>
+            <div class="stat-label">Alerts</div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content - Two Column Layout -->
+<div class="row">
+    <!-- Left Column: Quick Actions & Recommendations -->
+    <div class="col-lg-7">
+        <!-- Quick Actions Grid -->
+        <div class="row mb-3">
+            <div class="col-12 mb-2">
+                <h6 class="text-muted mb-2"><i class="fas fa-bolt text-warning me-1"></i> Quick Actions</h6>
+            </div>
+            
+            <div class="col-3 col-sm-3 mb-2">
+                <div class="quick-action-card" onclick="location.href='{{ url_for('chatbot_interface') }}'">
+                    <div class="action-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="action-title">Chat</div>
+                </div>
+            </div>
+            
+            <div class="col-3 col-sm-3 mb-2">
+                <div class="quick-action-card" onclick="location.href='{{ url_for('symptom_check') }}'">
+                    <div class="action-icon">
+                        <i class="fas fa-heartbeat"></i>
+                    </div>
+                    <div class="action-title">Symptoms</div>
+                </div>
+            </div>
+            
+            <div class="col-3 col-sm-3 mb-2">
+                <div class="quick-action-card" onclick="location.href='{{ url_for('mental_health') }}'">
+                    <div class="action-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <div class="action-title">Mental Health</div>
+                </div>
+            </div>
+            
+            <div class="col-3 col-sm-3 mb-2">
+                <div class="quick-action-card" onclick="location.href='{{ url_for('profile') }}'">
+                    <div class="action-icon">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="action-title">Profile</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recommendations -->
+        <div class="card activity-card mb-3">
+            <div class="card-header">
+                <h5><i class="fas fa-lightbulb text-warning me-2"></i> Recommendations</h5>
+            </div>
+            <div class="card-body">
+                {% if recommendations %}
+                    {% for rec in recommendations[:3] %}
+                    <div class="activity-item">
+                        <div class="activity-icon" style="background: rgba(255, 193, 7, 0.1); color: #ffc107;">
+                            <i class="fas fa-{{ 'apple-alt' if rec.category == 'nutrition' else 'running' if rec.category == 'exercise' else 'exclamation-triangle' }}"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">{{ rec.title }}</div>
+                            <small class="text-muted">{{ rec.description[:60] }}{% if rec.description|length > 60 %}...{% endif %}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-lightbulb"></i>
+                        </div>
+                        <p class="small mb-0">Complete profile for recommendations</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Recent Symptoms -->
+        <div class="card activity-card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-heartbeat text-danger me-2"></i> Recent Symptoms</h5>
+                    <a href="{{ url_for('symptom_check') }}" class="btn btn-sm btn-link p-0">
+                        <small>View all</small>
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if symptoms %}
+                    {% for symptom in symptoms[:3] %}
+                    <div class="activity-item">
+                        <div class="activity-icon" style="background: rgba(220, 53, 69, 0.1); color: #dc3545;">
+                            <i class="fas fa-{{ 'head-side-virus' if 'headache' in symptom.symptom_name|lower else 'stomach' if 'nausea' in symptom.symptom_name|lower else 'exclamation' }}"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="activity-title">{{ symptom.symptom_name }}</div>
+                                <span class="badge bg-{{ 'success' if symptom.severity == 'mild' else 'warning' if symptom.severity == 'moderate' else 'danger' }} badge-sm">
+                                    {{ symptom.severity|first|upper if symptom.severity else '?' }}
+                                </span>
+                            </div>
+                            <div class="activity-time">
+                                {{ symptom.created_at.strftime('%b %d') if symptom.created_at else '' }}
+                                {% if symptom.duration_days %}
+                                • {{ symptom.duration_days }} day{% if symptom.duration_days != 1 %}s{% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-heartbeat"></i>
+                        </div>
+                        <p class="small mb-0">No symptoms tracked yet</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Right Column: Activity & Risks -->
+    <div class="col-lg-5">
+        <!-- Recent Activity -->
+        <div class="card activity-card mb-3">
+            <div class="card-header">
+                <h5><i class="fas fa-history text-primary me-2"></i> Recent Activity</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_activity %}
+                    {% for activity in recent_activity[:4] %}
+                    <div class="activity-item">
+                        <div class="activity-icon" style="background: rgba(102, 126, 234, 0.1); color: #667eea;">
+                            <i class="fas fa-{{ activity.icon }}"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">{{ activity.title }}</div>
+                            <div class="activity-time">{{ activity.time }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-history"></i>
+                        </div>
+                        <p class="small mb-0">No recent activity</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Risk Overview -->
+        <div class="card activity-card mb-3">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line text-success me-2"></i> Risk Overview</h5>
+            </div>
+            <div class="card-body">
+                {% if risks %}
+                    {% for risk in risks[:3] %}
+                    <div class="activity-item">
+                        <div class="activity-icon" style="background: rgba({{ '40, 167, 69, 0.1' if risk.prediction == 'low' else '255, 193, 7, 0.1' if risk.prediction == 'medium' else '220, 53, 69, 0.1' }}); 
+                                 color: {{ '#28a745' if risk.prediction == 'low' else '#ffc107' if risk.prediction == 'medium' else '#dc3545' }};">
+                            <i class="fas fa-{{ 'check-circle' if risk.prediction == 'low' else 'exclamation-triangle' if risk.prediction == 'medium' else 'exclamation-triangle' }}"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="activity-title">{{ risk.prediction|title }} Risk</div>
+                                <span class="badge bg-{{ 'success' if risk.prediction == 'low' else 'warning' if risk.prediction == 'medium' else 'danger' }} badge-sm">
+                                    {{ (risk.confidence * 100)|round(0)|int if risk.confidence else 0 }}%
+                                </span>
+                            </div>
+                            <div class="activity-time">
+                                {{ risk.created_at.strftime('%b %d') if risk.created_at else '' }}
+                                {% if risk.doctor_reviewed %}
+                                • <span class="text-success"><i class="fas fa-check"></i> Reviewed</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <p class="small mb-0">No risk assessments yet</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Emergency Quick Access -->
+        <div class="emergency-alert">
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <i class="fas fa-exclamation-triangle fa-2x"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h6 class="mb-1">Emergency Help</h6>
+                    <p class="small mb-2">Need immediate assistance?</p>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-light" onclick="callEmergency()">
+                            <i class="fas fa-phone"></i> Call 911
+                        </button>
+                        <button class="btn btn-sm btn-outline-light" onclick="contactDoctor()">
+                            <i class="fas fa-user-md"></i> Doctor
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- High Risk Alerts Section (add after quick actions) -->
+{% if high_risk_alerts %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-danger border-0 shadow-sm">
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <i class="fas fa-exclamation-triangle fa-2x"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h5 class="mb-1">🚨 High Risk Alerts Require Attention</h5>
+                    <p class="mb-0">You have {{ high_risk_alerts|length }} high risk assessment(s) that need medical follow-up.</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('symptom_check') }}" class="btn btn-outline-danger">
+                        Review Alerts <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+<!-- Add a small footer note -->
+<div class="row mt-3">
+    <div class="col-12">
+        <p class="text-muted text-center small">
+            <i class="fas fa-sync-alt"></i> Auto-updates every 30 seconds • 
+            Last updated: <span id="lastUpdatedTime">Just now</span>
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Initialize tooltips
+        $('[data-bs-toggle="tooltip"]').tooltip();
+        
+        // Update dashboard stats every 30 seconds
+        setInterval(updateDashboardStats, 30000);
+        
+        // Initialize with current time
+        updateLastUpdated();
+    });
+    
+    function updateDashboardStats() {
+        $.ajax({
+            url: '/api/dashboard/stats',
+            method: 'GET',
+            success: function(data) {
+                if (!data.error) {
+                    // Update stats
+                    if (data.chat_count !== undefined) {
+                        $('.stat-card:eq(0) .stat-value').text(data.chat_count);
+                    }
+                    if (data.symptom_count !== undefined) {
+                        $('.stat-card:eq(1) .stat-value').text(data.symptom_count);
+                    }
+                    if (data.avg_mood !== undefined && data.avg_mood > 0) {
+                        $('.stat-card:eq(2) .stat-value').text(data.avg_mood.toFixed(1));
+                    }
+                    if (data.high_risk_count !== undefined) {
+                        $('.stat-card:eq(3) .stat-value').text(data.high_risk_count);
+                    }
+                    
+                    // Update last updated time
+                    updateLastUpdated();
+                    
+                    // Show notification for new alerts
+                    if (data.new_alerts > 0) {
+                        showAlertNotification(data.new_alerts);
+                    }
+                }
+            }
+        });
+    }
+    
+    function updateLastUpdated() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        $('#lastUpdatedTime').text(timeString);
+    }
+    
+    function showAlertNotification(count) {
+        // Simple notification without modal
+        Toastify({
+            text: `${count} new alert${count > 1 ? 's' : ''} detected`,
+            duration: 3000,
+            gravity: "top",
+            position: "right",
+            backgroundColor: "#ffc107",
+            className: "toast-warning"
+        }).showToast();
+    }
+    
+    function callEmergency() {
+        if (confirm('Call emergency services (911)?')) {
+            // In production, this would initiate a phone call
+            window.open('tel:911', '_blank');
+        }
+    }
+    
+    function contactDoctor() {
+        // Simple doctor contact
+        Toastify({
+            text: "Messaging your doctor...",
+            duration: 2000,
+            gravity: "top",
+            position: "right",
+            backgroundColor: "#28a745"
+        }).showToast();
+    }
+    
+    // Add toast notification function if not exists
+    if (typeof showToast === 'undefined') {
+        function showToast(message, type = 'info') {
+            const bgColor = type === 'success' ? '#28a745' : 
+                           type === 'warning' ? '#ffc107' : 
+                           type === 'danger' ? '#dc3545' : '#17a2b8';
+            
+            Toastify({
+                text: message,
+                duration: 3000,
+                gravity: "top",
+                position: "right",
+                backgroundColor: bgColor,
+                stopOnFocus: true
+            }).showToast();
+        }
+    }
+</script>
+
+<!-- Add Toastify CSS & JS if not already included -->
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
+<style>
+    .toast-warning {
+        background: linear-gradient(135deg, #ffc107, #ff9800);
+    }
+    
+    .badge-sm {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+    }
+</style>
+{% endblock %}

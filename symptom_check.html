@@ -1,0 +1,712 @@
+{% extends "layout.html" %}
+{% block title %}Symptom Check - PregBot{% endblock %}
+
+{% block extra_css %}
+<style>
+    .risk-card {
+        border-left: 5px solid;
+        transition: transform 0.3s;
+    }
+    .risk-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .risk-low {
+        border-left-color: #28a745;
+    }
+    .risk-medium {
+        border-left-color: #ffc107;
+    }
+    .risk-high {
+        border-left-color: #dc3545;
+    }
+    .symptom-badge {
+        font-size: 0.8em;
+        padding: 0.25em 0.6em;
+    }
+    .risk-unknown {
+        border-left-color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0"><i class="fas fa-heartbeat"></i> Symptom Risk Assessment</h4>
+                <small>Enter your symptoms for AI-powered risk prediction</small>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('symptom_check') }}" id="symptomForm">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Symptom Name</label>
+                            <select class="form-select" name="symptom_name" required>
+                                <option value="">Select a symptom</option>
+                                <option value="Headache">Headache</option>
+                                <option value="Nausea">Nausea/Vomiting</option>
+                                <option value="Back Pain">Back Pain</option>
+                                <option value="Swelling">Swelling (Edema)</option>
+                                <option value="Bleeding">Vaginal Bleeding</option>
+                                <option value="Dizziness">Dizziness/Fainting</option>
+                                <option value="Abdominal Pain">Abdominal Pain</option>
+                                <option value="Fever">Fever</option>
+                                <option value="Shortness of Breath">Shortness of Breath</option>
+                                <option value="Chest Pain">Chest Pain</option>
+                                <option value="Vision Changes">Vision Changes</option>
+                                <option value="Decreased Fetal Movement">Decreased Fetal Movement</option>
+                                <option value="Contractions">Contractions</option>
+                                <option value="Heartburn">Severe Heartburn</option>
+                                <option value="Constipation">Constipation</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Severity</label>
+                            <select class="form-select" name="severity" required>
+                                <option value="">Select severity</option>
+                                <option value="mild">Mild (Annoying but manageable)</option>
+                                <option value="moderate">Moderate (Interferes with daily activities)</option>
+                                <option value="severe">Severe (Incapacitating, requires rest)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Duration (in days)</label>
+                            <input type="number" class="form-control" name="duration" min="1" max="30" 
+                                   placeholder="How many days?" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Time of Day</label>
+                            <select class="form-select" name="time_of_day">
+                                <option value="">Any time</option>
+                                <option value="morning">Morning</option>
+                                <option value="afternoon">Afternoon</option>
+                                <option value="evening">Evening</option>
+                                <option value="night">Night</option>
+                                <option value="all_day">All day</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Additional Details</label>
+                        <textarea class="form-control" name="description" rows="3" 
+                                  placeholder="Describe the symptom in detail. Include location, triggers, relieving factors, and any other relevant information..."></textarea>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 
+                        <strong>Note:</strong> This assessment uses ML algorithms trained on pregnancy symptom data. 
+                        Results are for informational purposes only and not a substitute for professional medical advice.
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="reset" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-redo"></i> Clear Form
+                        </button>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-search"></i> Assess Risk
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- Display Last Risk Result -->
+                {% if last_result %}
+                <div class="mt-4">
+                    <div class="card risk-card risk-{{ last_result.risk_level }}">
+                        <div class="card-header bg-{{ 'success' if last_result.risk_level == 'low' else 'warning' if last_result.risk_level == 'medium' else 'danger' }} text-white">
+                            <h5 class="mb-0">Risk Assessment Result</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-center mb-4">
+                                <div class="display-4 fw-bold text-{{ 'success' if last_result.risk_level == 'low' else 'warning' if last_result.risk_level == 'medium' else 'danger' }}">
+                                    {{ last_result.risk_level|upper }}
+                                </div>
+                                <div class="text-muted">Confidence: {{ (last_result.confidence * 100)|round(1) if last_result.confidence else 'N/A' }}%</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <h6><i class="fas fa-comment-medical"></i> Explanation:</h6>
+                                <p>{{ last_result.explanation or 'No explanation available' }}</p>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <h6><i class="fas fa-clipboard-list"></i> Key Factors:</h6>
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="card bg-light">
+                                            <div class="card-body text-center py-2">
+                                                <small class="text-muted">Age</small>
+                                                <div class="fw-bold">{{ last_result.factors.age or 'N/A' }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="card bg-light">
+                                            <div class="card-body text-center py-2">
+                                                <small class="text-muted">Trimester</small>
+                                                <div class="fw-bold">{{ last_result.factors.trimester or 'N/A' }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="card bg-light">
+                                            <div class="card-body text-center py-2">
+                                                <small class="text-muted">Blood Pressure</small>
+                                                <div class="fw-bold">{{ last_result.factors.blood_pressure|title if last_result.factors.blood_pressure else 'N/A' }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="card bg-light">
+                                            <div class="card-body text-center py-2">
+                                                <small class="text-muted">Symptom Severity</small>
+                                                <div class="fw-bold">{{ last_result.factors.symptom_severity|title if last_result.factors.symptom_severity else 'N/A' }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-{{ 'success' if last_result.risk_level == 'low' else 'warning' if last_result.risk_level == 'medium' else 'danger' }}">
+                                <i class="fas fa-{{ 'check-circle' if last_result.risk_level == 'low' else 'exclamation-triangle' if last_result.risk_level == 'medium' else 'exclamation-circle' }}"></i>
+                                {% if last_result.risk_level == 'high' %}
+                                <strong>Immediate Action Recommended:</strong> Please contact your healthcare provider or visit emergency care immediately.
+                                {% elif last_result.risk_level == 'medium' %}
+                                <strong>Medical Attention Recommended:</strong> Schedule an appointment with your healthcare provider within 24-48 hours.
+                                {% else %}
+                                <strong>Monitor and Self-Care:</strong> Continue monitoring your symptoms and maintain regular prenatal checkups.
+                                {% endif %}
+                            </div>
+                            
+                            <div class="text-center">
+                                <button class="btn btn-outline-primary me-2" onclick="printResult()">
+                                    <i class="fas fa-print"></i> Print Result
+                                </button>
+                                <button class="btn btn-outline-success" onclick="shareResult()">
+                                    <i class="fas fa-share-alt"></i> Share with Doctor
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Symptom History -->
+        {% if symptoms %}
+        <div class="card shadow">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="fas fa-history"></i> Symptom History</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="symptomTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Symptom</th>
+                                <th>Severity</th>
+                                <th>Duration</th>
+                                <th>Details</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for symptom in symptoms %}
+                            <tr>
+                                <td>{{ symptom.created_at.strftime('%Y-%m-%d') if symptom.created_at else 'Unknown' }}</td>
+                                <td>
+                                    <span class="fw-bold">{{ symptom.symptom_name or 'Unknown symptom' }}</span>
+                                </td>
+                                <td>
+                                    {% if symptom.severity %}
+                                    <span class="badge symptom-badge bg-{{ 'success' if symptom.severity == 'mild' else 'warning' if symptom.severity == 'moderate' else 'danger' }}">
+                                        {{ symptom.severity|title }}
+                                    </span>
+                                    {% else %}
+                                    <span class="badge symptom-badge bg-secondary">Unknown</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ symptom.duration_days or 0 }} day{% if (symptom.duration_days or 0) != 1 %}s{% endif %}</td>
+                                <td>
+                                    {% if symptom.description %}
+                                    <small class="text-muted">{{ symptom.description[:50] }}{% if symptom.description|length > 50 %}...{% endif %}</small>
+                                    {% else %}
+                                    <small class="text-muted">No details</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-info" onclick="viewSymptomDetails({{ symptom.id }})">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card shadow">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                <h5>No Symptom History</h5>
+                <p class="text-muted">Your symptom history will appear here after you submit assessments.</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Risk History -->
+        {% if risk_history %}
+        <div class="card shadow mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="fas fa-chart-line"></i> Risk History</h5>
+            </div>
+            <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                {% for risk in risk_history %}
+                {% set risk_prediction = risk.prediction|default('unknown')|lower %}
+                {% set risk_class = 'unknown' if risk_prediction == 'unknown' else 'success' if risk_prediction == 'low' else 'warning' if risk_prediction == 'medium' else 'danger' %}
+                
+                <div class="card mb-2 border-{{ risk_class }}">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong class="text-{{ risk_class }}">
+                                    {{ risk_prediction|upper }}
+                                </strong>
+                                <br>
+                                <small class="text-muted">
+                                    {% if risk.created_at %}
+                                    {{ risk.created_at.strftime('%b %d, %H:%M') }}
+                                    {% else %}
+                                    Date unknown
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <div class="text-end">
+                                <div class="fw-bold">
+                                    {% if risk.confidence %}
+                                    {{ (risk.confidence * 100)|round(1) }}%
+                                    {% else %}
+                                    N/A
+                                    {% endif %}
+                                </div>
+                                <small>confidence</small>
+                            </div>
+                        </div>
+                        
+                        {% if risk.explanation %}
+                        <div class="mt-2">
+                            <small class="text-muted">{{ risk.explanation[:80] }}{% if risk.explanation|length > 80 %}...{% endif %}</small>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Display factors from separate columns -->
+                        <div class="mt-2 small">
+                            <div class="row">
+                                <div class="col-6">
+                                    <small>Age: {{ risk.factors_age or 'N/A' }}</small>
+                                </div>
+                                <div class="col-6">
+                                    <small>Tri: {{ risk.factors_trimester or 'N/A' }}</small>
+                                </div>
+                                <div class="col-6">
+                                    <small>BP: {{ risk.factors_bp_category or 'N/A' }}</small>
+                                </div>
+                                <div class="col-6">
+                                    <small>Severity: {{ risk.factors_symptom_severity or 'N/A' }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if risk.doctor_reviewed %}
+                        <div class="mt-2">
+                            <span class="badge bg-success">
+                                <i class="fas fa-check-circle"></i> Doctor Reviewed
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="card shadow mb-4">
+            <div class="card-body text-center py-4">
+                <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                <h5>No Risk History</h5>
+                <p class="text-muted">Your risk assessments will appear here after you submit symptoms.</p>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Quick Symptom Guide -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-book-medical"></i> Symptom Guide</h6>
+            </div>
+            <div class="card-body">
+                <div class="accordion" id="symptomGuide">
+                    <!-- Normal Symptoms -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#normalSymptoms">
+                                <i class="fas fa-check-circle text-success me-2"></i> Normal Symptoms
+                            </button>
+                        </h2>
+                        <div id="normalSymptoms" class="accordion-collapse collapse show" data-bs-parent="#symptomGuide">
+                            <div class="accordion-body">
+                                <ul class="list-unstyled mb-0">
+                                    <li><i class="fas fa-check text-success"></i> Mild nausea</li>
+                                    <li><i class="fas fa-check text-success"></i> Fatigue</li>
+                                    <li><i class="fas fa-check text-success"></i> Mild backache</li>
+                                    <li><i class="fas fa-check text-success"></i> Occasional headaches</li>
+                                    <li><i class="fas fa-check text-success"></i> Mild swelling</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Warning Symptoms -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#warningSymptoms">
+                                <i class="fas fa-exclamation-triangle text-warning me-2"></i> Warning Symptoms
+                            </button>
+                        </h2>
+                        <div id="warningSymptoms" class="accordion-collapse collapse" data-bs-parent="#symptomGuide">
+                            <div class="accordion-body">
+                                <ul class="list-unstyled mb-0">
+                                    <li><i class="fas fa-exclamation text-warning"></i> Severe headache</li>
+                                    <li><i class="fas fa-exclamation text-warning"></i> Vision changes</li>
+                                    <li><i class="fas fa-exclamation text-warning"></i> Severe swelling</li>
+                                    <li><i class="fas fa-exclamation text-warning"></i> High fever</li>
+                                    <li><i class="fas fa-exclamation text-warning"></i> Moderate pain</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Emergency Symptoms -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#emergencySymptoms">
+                                <i class="fas fa-ambulance text-danger me-2"></i> Emergency Symptoms
+                            </button>
+                        </h2>
+                        <div id="emergencySymptoms" class="accordion-collapse collapse" data-bs-parent="#symptomGuide">
+                            <div class="accordion-body">
+                                <ul class="list-unstyled mb-0">
+                                    <li><i class="fas fa-times text-danger"></i> Heavy bleeding</li>
+                                    <li><i class="fas fa-times text-danger"></i> Severe abdominal pain</li>
+                                    <li><i class="fas fa-times text-danger"></i> No fetal movement</li>
+                                    <li><i class="fas fa-times text-danger"></i> Difficulty breathing</li>
+                                    <li><i class="fas fa-times text-danger"></i> Seizures</li>
+                                </ul>
+                                <p class="text-danger small mt-2">
+                                    <strong>Call emergency services immediately if experiencing any of these.</strong>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Self-Care Tips -->
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0"><i class="fas fa-hand-holding-heart"></i> Self-Care Tips</h6>
+            </div>
+            <div class="card-body">
+                <div class="card bg-light mb-2">
+                    <div class="card-body p-3">
+                        <h6><i class="fas fa-bed text-primary"></i> Rest</h6>
+                        <p class="small mb-0">Get adequate sleep and take breaks during the day.</p>
+                    </div>
+                </div>
+                <div class="card bg-light mb-2">
+                    <div class="card-body p-3">
+                        <h6><i class="fas fa-tint text-info"></i> Hydration</h6>
+                        <p class="small mb-0">Drink 8-10 glasses of water daily to reduce swelling.</p>
+                    </div>
+                </div>
+                <div class="card bg-light mb-2">
+                    <div class="card-body p-3">
+                        <h6><i class="fas fa-utensils text-warning"></i> Small Meals</h6>
+                        <p class="small mb-0">Eat small, frequent meals to manage nausea.</p>
+                    </div>
+                </div>
+                <div class="card bg-light">
+                    <div class="card-body p-3">
+                        <h6><i class="fas fa-walking text-success"></i> Gentle Movement</h6>
+                        <p class="small mb-0">Light walking can help with back pain and digestion.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Symptom Details Modal -->
+<div class="modal fade" id="symptomDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-file-medical-alt"></i> Symptom Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="symptomDetailsContent">
+                <!-- Content will be loaded via AJAX -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Form validation
+        $('#symptomForm').submit(function(e) {
+            let valid = true;
+            
+            // Check required fields
+            $(this).find('input[required], select[required]').each(function() {
+                if (!$(this).val()) {
+                    $(this).addClass('is-invalid');
+                    valid = false;
+                } else {
+                    $(this).removeClass('is-invalid');
+                }
+            });
+            
+            if (!valid) {
+                e.preventDefault();
+                showToast('Please fill in all required fields', 'warning');
+            }
+        });
+        
+        // Remove validation on input
+        $('input, select, textarea').on('input change', function() {
+            $(this).removeClass('is-invalid');
+        });
+        
+        // Initialize DataTable if symptoms exist
+        if ($('#symptomTable').length) {
+            $('#symptomTable').DataTable({
+                pageLength: 5,
+                lengthMenu: [[5, 10, 25, 50], [5, 10, 25, 50]],
+                order: [[0, 'desc']],
+                language: {
+                    search: "Search symptoms:",
+                    lengthMenu: "Show _MENU_ entries",
+                    info: "Showing _START_ to _END_ of _TOTAL_ symptoms",
+                    paginate: {
+                        first: "First",
+                        last: "Last",
+                        next: "Next",
+                        previous: "Previous"
+                    }
+                }
+            });
+        }
+    });
+    
+    function viewSymptomDetails(symptomId) {
+        // In a real implementation, this would fetch details via AJAX
+        const modalContent = `
+            <div class="text-center">
+                <i class="fas fa-spinner fa-spin fa-2x"></i>
+                <p>Loading symptom details...</p>
+            </div>
+        `;
+        
+        $('#symptomDetailsContent').html(modalContent);
+        $('#symptomDetailsModal').modal('show');
+        
+        // Simulate AJAX call
+        setTimeout(() => {
+            // This would be replaced with actual API call
+            const details = `
+                <h6>Symptom Information</h6>
+                <table class="table table-sm">
+                    <tr>
+                        <th width="30%">Symptom:</th>
+                        <td>Headache</td>
+                    </tr>
+                    <tr>
+                        <th>Severity:</th>
+                        <td><span class="badge bg-warning">Moderate</span></td>
+                    </tr>
+                    <tr>
+                        <th>Duration:</th>
+                        <td>3 days</td>
+                    </tr>
+                    <tr>
+                        <th>Reported:</th>
+                        <td>December 6, 2024 14:30</td>
+                    </tr>
+                </table>
+                
+                <h6 class="mt-4">Description</h6>
+                <div class="card bg-light">
+                    <div class="card-body">
+                        "Persistent headache on the right side, worse in the evenings. Mild sensitivity to light. Taking rest helps slightly."
+                    </div>
+                </div>
+                
+                <h6 class="mt-4">Related Risk Assessment</h6>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Medium Risk</strong> - Confidence: 78.5%<br>
+                    <small>Headache in third trimester with normal blood pressure suggests need for monitoring.</small>
+                </div>
+                
+                <h6 class="mt-4">Doctor's Notes</h6>
+                <div class="alert alert-info">
+                    <i class="fas fa-user-md"></i>
+                    <strong>Dr. Smith (Dec 6, 2024):</strong><br>
+                    "Recommended hydration and rest. Schedule follow-up if symptoms worsen."
+                </div>
+            `;
+            
+            $('#symptomDetailsContent').html(details);
+        }, 1000);
+    }
+    
+    function printResult() {
+        {% if last_result %}
+        const printContent = document.querySelector('.risk-card').outerHTML;
+        const originalContent = document.body.innerHTML;
+        
+        document.body.innerHTML = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>PregBot Risk Assessment Report</title>
+                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+                <style>
+                    @media print {
+                        body { padding: 20px; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="text-center mb-4">
+                        <h2>PregBot Risk Assessment Report</h2>
+                        <p class="text-muted">Generated on: ${new Date().toLocaleString()}</p>
+                        <hr>
+                    </div>
+                    ${printContent}
+                    <div class="mt-4">
+                        <p class="text-muted small">
+                            <strong>Disclaimer:</strong> This report is generated by AI and is for informational purposes only. 
+                            It is not a substitute for professional medical advice, diagnosis, or treatment.
+                        </p>
+                    </div>
+                </div>
+                <div class="text-center no-print mt-4">
+                    <button class="btn btn-primary" onclick="window.print()">
+                        <i class="fas fa-print"></i> Print
+                    </button>
+                    <button class="btn btn-secondary" onclick="window.location.reload()">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                </div>
+            </body>
+            </html>
+        `;
+        
+        window.print();
+        document.body.innerHTML = originalContent;
+        window.location.reload();
+        {% endif %}
+    }
+    
+    function shareResult() {
+        {% if last_result %}
+        if (navigator.share) {
+            navigator.share({
+                title: 'PregBot Risk Assessment',
+                text: 'Risk Level: {{ last_result.risk_level|upper }}\nConfidence: {{ (last_result.confidence * 100)|round(1) if last_result.confidence else "N/A" }}%\n{{ last_result.explanation or "No explanation available" }}',
+                url: window.location.href
+            });
+        } else {
+            // Fallback: copy to clipboard
+            const text = `PregBot Risk Assessment Report\n\n` +
+                        `Risk Level: {{ last_result.risk_level|upper }}\n` +
+                        `Confidence: {{ (last_result.confidence * 100)|round(1) if last_result.confidence else "N/A" }}%\n` +
+                        `Explanation: {{ last_result.explanation or "No explanation available" }}\n` +
+                        `Factors:\n` +
+                        `  Age: {{ last_result.factors.age or "N/A" }}\n` +
+                        `  Trimester: {{ last_result.factors.trimester or "N/A" }}\n` +
+                        `  Blood Pressure: {{ last_result.factors.blood_pressure or "N/A" }}\n` +
+                        `  Symptom Severity: {{ last_result.factors.symptom_severity or "N/A" }}\n\n` +
+                        `Report URL: ${window.location.href}`;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Report copied to clipboard. You can now share it with your doctor.', 'success');
+            });
+        }
+        {% endif %}
+    }
+    
+    // Quick symptom selection
+    function quickSymptom(symptom, severity) {
+        $('select[name="symptom_name"]').val(symptom);
+        $('select[name="severity"]').val(severity);
+        $('input[name="duration"]').val(1);
+        showToast(`Quick selection: ${symptom} (${severity})`, 'info');
+    }
+</script>
+
+<!-- Quick Symptom Buttons (for testing) -->
+{% if current_user.user_type == 'patient' %}
+<script>
+    $(document).ready(function() {
+        const quickButtons = `
+            <div class="card border-primary mt-4">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="fas fa-bolt"></i> Quick Symptoms (Demo)</h6>
+                </div>
+                <div class="card-body">
+                    <div class="btn-group-vertical w-100" role="group">
+                        <button class="btn btn-outline-success text-start" onclick="quickSymptom('Headache', 'mild')">
+                            <i class="fas fa-head-side-virus"></i> Mild Headache
+                        </button>
+                        <button class="btn btn-outline-warning text-start" onclick="quickSymptom('Nausea', 'moderate')">
+                            <i class="fas fa-stomach"></i> Moderate Nausea
+                        </button>
+                        <button class="btn btn-outline-danger text-start" onclick="quickSymptom('Bleeding', 'severe')">
+                            <i class="fas fa-tint"></i> Severe Bleeding
+                        </button>
+                        <button class="btn btn-outline-info text-start" onclick="quickSymptom('Back Pain', 'moderate')">
+                            <i class="fas fa-bone"></i> Moderate Back Pain
+                        </button>
+                    </div>
+                    <small class="text-muted mt-2">These buttons are for demonstration purposes only.</small>
+                </div>
+            </div>
+        `;
+        
+        $('#symptomForm').after(quickButtons);
+    });
+</script>
+{% endif %}
+{% endblock %}

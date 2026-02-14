@@ -1,0 +1,206 @@
+{% extends "layout.html" %}
+{% block title %}Login - PregBot{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-lg">
+            <div class="card-header bg-primary text-white text-center py-4">
+                <h3><i class="fas fa-sign-in-alt"></i> Login to PregBot</h3>
+                <p class="mb-0">Access your personalized pregnancy support dashboard</p>
+            </div>
+            <div class="card-body p-4 p-md-5">
+                <!-- Login Form -->
+                <form method="POST" action="{{ url_for('login') }}" id="loginForm">
+                    <!-- Email Field -->
+                    <div class="form-floating mb-4">
+                        <input type="email" class="form-control" id="email" name="email" 
+                               placeholder="name@example.com" required>
+                        <label for="email"><i class="fas fa-envelope"></i> Email Address</label>
+                        <div class="invalid-feedback">
+                            Please enter a valid email address.
+                        </div>
+                    </div>
+
+                    <!-- Password Field -->
+                    <div class="form-floating mb-4">
+                        <input type="password" class="form-control" id="password" name="password" 
+                               placeholder="Password" required>
+                        <label for="password"><i class="fas fa-lock"></i> Password</label>
+                        <div class="invalid-feedback">
+                            Please enter your password.
+                        </div>
+                    </div>
+
+                    <!-- Remember Me & Forgot Password -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="remember" name="remember">
+                            <label class="form-check-label" for="remember">
+                                Remember me
+                            </label>
+                        </div>
+                        <a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#forgotPasswordModal">
+                            Forgot password?
+                        </a>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="d-grid gap-2 mb-4">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-sign-in-alt"></i> Login
+                        </button>
+                    </div>
+
+                    <!-- Divider -->
+                    <div class="text-center mb-4">
+                        <span class="text-muted">or continue with</span>
+                    </div>
+
+                    <!-- Social Login (Placeholder) -->
+                    <div class="d-grid gap-2 mb-4">
+                        <button type="button" class="btn btn-outline-primary">
+                            <i class="fab fa-google"></i> Continue with Google
+                        </button>
+                        <button type="button" class="btn btn-outline-primary">
+                            <i class="fab fa-facebook"></i> Continue with Facebook
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Register Link -->
+                <div class="text-center mt-4">
+                    <p class="mb-0">Don't have an account? 
+                        <a href="{{ url_for('register') }}" class="text-decoration-none fw-bold">
+                            Register here
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Cards -->
+        <div class="row mt-4">
+            <div class="col-md-6 mb-3">
+                <div class="card bg-light border-0 h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-user-md fa-2x text-primary mb-3"></i>
+                        <h6>Doctor Login</h6>
+                        <p class="small text-muted mb-0">Healthcare providers access medical dashboard</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="card bg-light border-0 h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-user fa-2x text-primary mb-3"></i>
+                        <h6>Patient Login</h6>
+                        <p class="small text-muted mb-0">Pregnant women access support services</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Forgot Password Modal -->
+<div class="modal fade" id="forgotPasswordModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-key"></i> Reset Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Enter your email address and we'll send you a link to reset your password.</p>
+                <form id="forgotPasswordForm">
+                    <div class="mb-3">
+                        <label for="resetEmail" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="resetEmail" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="resetPassword()">
+                    Send Reset Link
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Form validation
+        $('#loginForm').submit(function(e) {
+            const email = $('#email').val();
+            const password = $('#password').val();
+            
+            if (!email || !password) {
+                e.preventDefault();
+                if (!email) $('#email').addClass('is-invalid');
+                if (!password) $('#password').addClass('is-invalid');
+                showToast('Please fill in all required fields', 'warning');
+            }
+        });
+
+        // Remove validation on input
+        $('input').on('input', function() {
+            $(this).removeClass('is-invalid');
+        });
+    });
+
+    function resetPassword() {
+        const email = $('#resetEmail').val();
+        if (!email) {
+            $('#resetEmail').addClass('is-invalid');
+            showToast('Please enter your email address', 'warning');
+            return;
+        }
+
+        // Simulate password reset (in real app, this would call an API)
+        $('#forgotPasswordModal').modal('hide');
+        showToast(`Password reset link sent to ${email}`, 'success');
+        $('#resetEmail').val('');
+    }
+
+    // Demo accounts for testing
+    $(document).ready(function() {
+        // Add demo account buttons (remove in production)
+        if (window.location.href.includes('localhost') || window.location.href.includes('127.0.0.1')) {
+            const demoSection = `
+                <div class="card border-info mt-4">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0"><i class="fas fa-flask"></i> Demo Accounts (Development Only)</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <button class="btn btn-outline-success w-100" onclick="fillDemoCredentials('patient@example.com', 'password123')">
+                                    <i class="fas fa-user"></i> Demo Patient
+                                </button>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <button class="btn btn-outline-warning w-100" onclick="fillDemoCredentials('doctor@example.com', 'password123')">
+                                    <i class="fas fa-user-md"></i> Demo Doctor
+                                </button>
+                            </div>
+                        </div>
+                        <small class="text-muted">These credentials are for testing purposes only.</small>
+                    </div>
+                </div>
+            `;
+            $('.row.justify-content-center .col-md-6').append(demoSection);
+        }
+    });
+
+    function fillDemoCredentials(email, password) {
+        $('#email').val(email);
+        $('#password').val(password);
+        showToast(`Demo credentials filled for ${email.split('@')[0]}`, 'info');
+    }
+</script>
+{% endblock %}
